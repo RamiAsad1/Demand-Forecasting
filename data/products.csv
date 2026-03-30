@@ -1,0 +1,16 @@
+product_id,name,category,shelf_life_days,avg_daily_demand
+1,Bananas,Perishable,5,40
+2,Apples,Perishable,7,30
+3,Tomatoes,Perishable,4,25
+4,Lettuce,Perishable,3,15
+5,Carrots,Perishable,10,20
+6,Whole Milk,Refrigerated,7,50
+7,Yogurt,Refrigerated,14,20
+8,Butter,Refrigerated,30,10
+9,Orange Juice,Refrigerated,14,35
+10,Cheddar Cheese,Refrigerated,21,12
+11,Dish Soap,Household,730,8
+12,Bleach,Household,365,3
+13,Paper Towels,Household,730,15
+14,Shampoo,Household,730,6
+15,Toothpaste,Household,730,9
