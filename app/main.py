@@ -1,57 +1,65 @@
-"""
-main.py
--------
-FastAPI application entry point.
-Exposes the demand forecasting API.
-"""
+# app/main.py
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from app.db.database import get_db
 from app.pipelines.feature_pipelines import build_features
 from app.services.forecast_service import generate_forecast
-from app.models.schemas import ForecastReport
-
-app = FastAPI(
-    title="Demand Forecasting API",
-    description="Predicts which grocery products are at risk of stockout in the next 7 days.",
-    version="0.1.0",
+from app.services.ingestion_service import ingest_sales, ingest_inventory
+from app.models.schemas import (
+    ForecastReport,
+    BulkSaleRequest,
+    BulkInventoryRequest,
+    BulkIngestionResponse,
 )
 
+app = FastAPI(
+    title="Grocery Demand Forecasting API",
+    version="0.4.0",
+)
 
 @app.get("/health")
-def health_check():
-    """Confirm that the API is running."""
+def health():
     return {"status": "ok"}
 
 
 @app.get("/forecast", response_model=ForecastReport)
-def get_forecast():
-    """
-    Returns a full weekly restock risk report.
-    Flags products whose projected stock after 7 days is <= 0.
-    """
-    try:
-        df = build_features()
-        report = generate_forecast(df)
-        return report
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+def forecast(db: Session = Depends(get_db)):
+    features = build_features(db)
+    return generate_forecast(features)
 
 
 @app.get("/forecast/at-risk", response_model=ForecastReport)
-def get_at_risk_only():
+def forecast_at_risk(db: Session = Depends(get_db)):
+    features = build_features(db)
+    report = generate_forecast(features)
+    report.products = [p for p in report.products if p.at_risk]
+    report.total_products = len(report.products)
+    return report
+
+
+@app.post("/sales", response_model=BulkIngestionResponse, status_code=200)
+def post_sales(payload: BulkSaleRequest, db: Session = Depends(get_db)):
     """
-    Returns only the products at risk of stockout.
-    Filtered subset of /forecast.
+    Bulk-ingest daily sale records.
+
+    - Validates all product_ids before writing anything.
+    - Upserts on (product_id, sale_date): overwrites quantity_sold if the
+      record already exists, inserts if it does not.
+    - The entire batch is committed atomically.
     """
-    try:
-        df = build_features()
-        report = generate_forecast(df)
-        at_risk = [p for p in report.products if p.at_risk]
-        return ForecastReport(
-            forecast_date=report.forecast_date,
-            total_products=report.total_products,
-            at_risk_count=report.at_risk_count,
-            products=at_risk,
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return ingest_sales(db, payload.records)
+
+
+@app.post("/inventory", response_model=BulkIngestionResponse, status_code=200)
+def post_inventory(payload: BulkInventoryRequest, db: Session = Depends(get_db)):
+    """
+    Bulk-ingest daily inventory snapshots.
+
+    - Validates all product_ids before writing anything.
+    - Upserts on (product_id, snapshot_date): overwrites current_stock if the
+      record already exists, inserts if it does not.
+    - The entire batch is committed atomically.
+    """
+    return ingest_inventory(db, payload.records)
