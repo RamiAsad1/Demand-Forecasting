@@ -86,6 +86,9 @@ python app/scripts/seed_db.py
 
 # 4. Start the API
 uvicorn app.main:app --reload
+
+# 5. Open the forecast dashboard
+http://127.0.0.1:8000/dashboard
 ```
 
 Open `http://127.0.0.1:8000/docs` for the interactive Swagger UI.
@@ -110,24 +113,22 @@ notebooks/           # Exploratory analysis and model validation
 
 ## Forecasting Approach
 
-The current model uses a 7-day rolling average as the demand proxy:
+The model uses a shelf-life-aware rolling average as the demand proxy:
 
 ```
-predicted_weekly_demand = rolling_avg_7d × 7
-projected_stock         = current_stock − predicted_weekly_demand
+reorder_horizon         = min(7, shelf_life_days)
+predicted_demand        = rolling_avg_7d × reorder_horizon
+projected_stock         = current_stock − predicted_demand
 at_risk                 = projected_stock ≤ 0
 ```
 
+The forecast horizon is capped at a product's shelf life — forecasting demand beyond expiry is meaningless. Perishables with short shelf lives (e.g. Lettuce: 3d, Tomatoes: 4d, Bananas: 5d) are assessed over a tighter window.
+
 Validated against a held-out 7-day backtest window. Baseline MAPE: **12.42%**.
 
-Highest-error products (Bananas at 30.5%, Lettuce at 25.5%) are the primary targets for model improvement in the next iteration.
-
+Simple Exponential Smoothing (SES) was evaluated as a candidate improvement. Overall MAPE of 26.15% — did not beat the baseline. Root cause: synthetic data has no trend or momentum, removing any advantage SES would offer. Model improvement is deferred until real store data is available.
 ---
 
 ## Roadmap
-
-- [ ] Weighted rolling average / exponential smoothing to beat 12.42% MAPE baseline
-- [ ] Shelf-life-aware risk scoring
-- [ ] Edge case handling (new products, zero-sales history)
 - [ ] PostgreSQL migration for deployed environments
-- [ ] Minimal frontend dashboard
+- [ ] The switch to a more complex ML model once better data is aquired
