@@ -5,7 +5,7 @@ This defines the shape of the data for the API layer.
 """
 
 from datetime import date
-from typing import List , Literal
+from typing import List, Literal
 from pydantic import BaseModel, Field, model_validator
 
 
@@ -14,10 +14,12 @@ class ProductForecast(BaseModel):
     name: str
     category: Literal["Perishable", "Refrigerated", "Household"]
     rolling_avg_7d: float
+    reorder_horizon: int
     predicted_weekly_demand: float
     current_stock: int
     projected_stock: float
     at_risk: bool
+
 
 class ForecastReport(BaseModel):
     forecast_date: str
@@ -25,15 +27,18 @@ class ForecastReport(BaseModel):
     at_risk_count: int
     products: list[ProductForecast]
 
+
 class SaleRecordIn(BaseModel):
     product_id: int
     quantity_sold: int = Field(..., ge=0)
     sale_date: date
 
+
 class InventoryRecordIn(BaseModel):
     product_id: int
     current_stock: int = Field(..., ge=0)
     snapshot_date: date
+
 
 class BulkSaleRequest(BaseModel):
     records: List[SaleRecordIn] = Field(..., min_length=1)
@@ -51,6 +56,7 @@ class BulkSaleRequest(BaseModel):
                 )
             seen.add(key)
         return self
+
 
 class BulkInventoryRequest(BaseModel):
     records: List[InventoryRecordIn] = Field(..., min_length=1)

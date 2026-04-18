@@ -5,7 +5,7 @@ SQLAlchemy ORM models — one class per database table.
 Do not confuse with app/models/schemas.py which are API layer representations.
 """
 
-from sqlalchemy import Column, Integer, Float, Text, Date, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, Float, Text, Date, UniqueConstraint
 from app.db.database import Base
 
 

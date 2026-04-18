@@ -25,8 +25,8 @@ np.random.seed(42)
 
 # ─── Config ───────────────────────────────────────────────────────────────────
 START_DATE = date(2024, 1, 1)
-NUM_DAYS   = 90          # ~3 months of history
-OUTPUT_DIR = "data"      # relative to repo root
+NUM_DAYS = 90  # ~3 months of history
+OUTPUT_DIR = "data"  # relative to repo root
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -41,23 +41,25 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 PRODUCTS = [
     # Perishables (fruits & vegetables)
-    {"product_id": 1,  "name": "Bananas",       "category": "Perishable",   "shelf_life_days": 5,  "avg_daily_demand": 40},
-    {"product_id": 2,  "name": "Apples",         "category": "Perishable",   "shelf_life_days": 7,  "avg_daily_demand": 30},
-    {"product_id": 3,  "name": "Tomatoes",       "category": "Perishable",   "shelf_life_days": 4,  "avg_daily_demand": 25},
-    {"product_id": 4,  "name": "Lettuce",        "category": "Perishable",   "shelf_life_days": 3,  "avg_daily_demand": 15},
-    {"product_id": 5,  "name": "Carrots",        "category": "Perishable",   "shelf_life_days": 10, "avg_daily_demand": 20},
+    {"product_id": 1, "name": "Bananas", "category": "Perishable", "shelf_life_days": 5, "avg_daily_demand": 40},
+    {"product_id": 2, "name": "Apples", "category": "Perishable", "shelf_life_days": 7, "avg_daily_demand": 30},
+    {"product_id": 3, "name": "Tomatoes", "category": "Perishable", "shelf_life_days": 4, "avg_daily_demand": 25},
+    {"product_id": 4, "name": "Lettuce", "category": "Perishable", "shelf_life_days": 3, "avg_daily_demand": 15},
+    {"product_id": 5, "name": "Carrots", "category": "Perishable", "shelf_life_days": 10, "avg_daily_demand": 20},
     # Refrigerated
-    {"product_id": 6,  "name": "Whole Milk",     "category": "Refrigerated", "shelf_life_days": 7,  "avg_daily_demand": 50},
-    {"product_id": 7,  "name": "Yogurt",         "category": "Refrigerated", "shelf_life_days": 14, "avg_daily_demand": 20},
-    {"product_id": 8,  "name": "Butter",         "category": "Refrigerated", "shelf_life_days": 30, "avg_daily_demand": 10},
-    {"product_id": 9,  "name": "Orange Juice",   "category": "Refrigerated", "shelf_life_days": 14, "avg_daily_demand": 35},
-    {"product_id": 10, "name": "Cheddar Cheese", "category": "Refrigerated", "shelf_life_days": 21, "avg_daily_demand": 12},
+    {"product_id": 6, "name": "Whole Milk", "category": "Refrigerated", "shelf_life_days": 7, "avg_daily_demand": 50},
+    {"product_id": 7, "name": "Yogurt", "category": "Refrigerated", "shelf_life_days": 14, "avg_daily_demand": 20},
+    {"product_id": 8, "name": "Butter", "category": "Refrigerated", "shelf_life_days": 30, "avg_daily_demand": 10},
+    {"product_id": 9, "name": "Orange Juice", "category": "Refrigerated", "shelf_life_days": 14,
+     "avg_daily_demand": 35},
+    {"product_id": 10, "name": "Cheddar Cheese", "category": "Refrigerated", "shelf_life_days": 21,
+     "avg_daily_demand": 12},
     # Household
-    {"product_id": 11, "name": "Dish Soap",      "category": "Household",    "shelf_life_days": 730, "avg_daily_demand": 8},
-    {"product_id": 12, "name": "Bleach",         "category": "Household",    "shelf_life_days": 365, "avg_daily_demand": 3},
-    {"product_id": 13, "name": "Paper Towels",   "category": "Household",    "shelf_life_days": 730, "avg_daily_demand": 15},
-    {"product_id": 14, "name": "Shampoo",        "category": "Household",    "shelf_life_days": 730, "avg_daily_demand": 6},
-    {"product_id": 15, "name": "Toothpaste",     "category": "Household",    "shelf_life_days": 730, "avg_daily_demand": 9},
+    {"product_id": 11, "name": "Dish Soap", "category": "Household", "shelf_life_days": 730, "avg_daily_demand": 8},
+    {"product_id": 12, "name": "Bleach", "category": "Household", "shelf_life_days": 365, "avg_daily_demand": 3},
+    {"product_id": 13, "name": "Paper Towels", "category": "Household", "shelf_life_days": 730, "avg_daily_demand": 15},
+    {"product_id": 14, "name": "Shampoo", "category": "Household", "shelf_life_days": 730, "avg_daily_demand": 6},
+    {"product_id": 15, "name": "Toothpaste", "category": "Household", "shelf_life_days": 730, "avg_daily_demand": 9},
 ]
 
 products_df = pd.DataFrame(PRODUCTS)
@@ -108,10 +110,10 @@ for product in PRODUCTS:
         # We still record zero-sale days — omitting them would distort
         # rolling averages and make the data look artificially clean.
         sales_rows.append({
-            "sale_id":       sale_id,
-            "product_id":    product["product_id"],
+            "sale_id": sale_id,
+            "product_id": product["product_id"],
             "quantity_sold": qty,
-            "sale_date":     d.isoformat(),
+            "sale_date": d.isoformat(),
         })
         sale_id += 1
 
@@ -139,8 +141,8 @@ for product in PRODUCTS:
     #   max_stock      = enough for ~2× shelf life worth of demand
     #   reorder_point  = enough to cover 1 shelf-life worth of demand
     #   (capped to avoid absurdly large numbers for long-shelf-life items)
-    max_stock     = min(avg_demand * shelf_life * 2, avg_demand * 30)
-    reorder_point = min(avg_demand * shelf_life,     avg_demand * 14)
+    max_stock = min(avg_demand * shelf_life * 2, avg_demand * 30)
+    reorder_point = min(avg_demand * shelf_life, avg_demand * 14)
 
     current_stock = max_stock  # start fully stocked
 
@@ -160,8 +162,8 @@ for product in PRODUCTS:
             current_stock = int(max_stock)
 
         inventory_rows.append({
-            "snapshot_id":   snapshot_id,
-            "product_id":    product["product_id"],
+            "snapshot_id": snapshot_id,
+            "product_id": product["product_id"],
             "current_stock": current_stock,
             "snapshot_date": date_str,
         })
@@ -170,8 +172,8 @@ for product in PRODUCTS:
 inventory_df = pd.DataFrame(inventory_rows)
 
 # ─── Write to CSV ─────────────────────────────────────────────────────────────
-products_df.to_csv(os.path.join(OUTPUT_DIR, "products.csv"),   index=False)
-sales_df.to_csv(   os.path.join(OUTPUT_DIR, "sales.csv"),      index=False)
+products_df.to_csv(os.path.join(OUTPUT_DIR, "products.csv"), index=False)
+sales_df.to_csv(os.path.join(OUTPUT_DIR, "sales.csv"), index=False)
 inventory_df.to_csv(os.path.join(OUTPUT_DIR, "inventory.csv"), index=False)
 
 print("✅ Data generated successfully.")

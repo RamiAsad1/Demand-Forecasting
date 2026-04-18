@@ -5,8 +5,7 @@ Contains all the ingestion logic: product ID validation, duplicate counting for 
 and the upsert loops for both sales and inventory.
 """
 
-from datetime import date
-from typing import List, Tuple, Set
+from typing import List, Set
 
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert

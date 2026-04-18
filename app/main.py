@@ -1,6 +1,8 @@
 # app/main.py
 
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
@@ -18,6 +20,14 @@ app = FastAPI(
     title="Grocery Demand Forecasting API",
     version="0.4.0",
 )
+
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+
+@app.get("/dashboard")
+def dashboard():
+    return FileResponse("app/static/dashboard.html")
+
 
 @app.get("/health")
 def health():

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demand Forecast Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --bg-surface: #181c25;
+      --bg-row-risk: rgba(220, 60, 60, 0.08);
+      --border: rgba(255,255,255,0.08);
+      --border-strong: rgba(255,255,255,0.15);
+      --border-risk: rgba(220,60,60,0.5);
+      --text-primary: #e8eaf0;
+      --text-secondary: #8b909e;
+      --text-muted: #555b6a;
+      --accent-risk: #e05c5c;
+      --accent-safe: #3dba7e;
+      --accent-warn: #e09a3d;
+      --badge-perish-bg: rgba(224,154,61,0.15);
+      --badge-perish-fg: #e09a3d;
+      --badge-refrig-bg: rgba(61,130,224,0.15);
+      --badge-refrig-fg: #5ba3e8;
+      --badge-house-bg: rgba(139,144,158,0.15);
+      --badge-house-fg: #8b909e;
+      --font-mono: 'IBM Plex Mono', monospace;
+      --font-sans: 'IBM Plex Sans', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    .header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 1.75rem;
+      padding-bottom: 1rem;
+      border-bottom: 0.5px solid var(--border);
+    }
+
+    .title {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .subtitle {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .endpoint-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .live-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-safe);
+      margin-right: 6px;
+      animation: pulse 2s infinite;
+      vertical-align: middle;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat {
+      background: var(--bg-surface);
+      border: 0.5px solid var(--border);
+      border-radius: 8px;
+      padding: 0.875rem 1rem;
+    }
+
+    .stat-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .stat-val {
+      font-family: var(--font-mono);
+      font-size: 24px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .stat-val.danger { color: var(--accent-risk); }
+
+    .filter-bar {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 1rem;
+    }
+
+    .filter-btn {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 4px 12px;
+      border: 0.5px solid var(--border);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: all 0.15s;
+    }
+
+    .filter-btn:hover { border-color: var(--border-strong); color: var(--text-primary); }
+    .filter-btn.active { background: var(--bg-surface); color: var(--text-primary); border-color: var(--border-strong); }
+
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    th {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 6px 10px;
+      text-align: left;
+      border-bottom: 0.5px solid var(--border);
+    }
+
+    td {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 9px 10px;
+      border-bottom: 0.5px solid var(--border);
+      color: var(--text-primary);
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    tr.risk-row td { background: var(--bg-row-risk); }
+    tr.risk-row td:first-child { border-left: 2px solid var(--border-risk); }
+
+    .badge {
+      display: inline-block;
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-weight: 500;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-p { background: var(--badge-perish-bg); color: var(--badge-perish-fg); }
+    .badge-r { background: var(--badge-refrig-bg); color: var(--badge-refrig-fg); }
+    .badge-h { background: var(--badge-house-bg); color: var(--badge-house-fg); }
+    .badge-risk { background: rgba(220,60,60,0.15); color: var(--accent-risk); }
+    .badge-safe { background: rgba(61,186,126,0.12); color: var(--accent-safe); }
+
+    .neg { color: var(--accent-risk); font-weight: 500; }
+
+    .empty {
+      text-align: center;
+      padding: 2.5rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .error-bar {
+      background: rgba(220,60,60,0.1);
+      border: 0.5px solid var(--border-risk);
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent-risk);
+      margin-bottom: 1rem;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div>
+      <div class="title">Demand Forecast Report</div>
+      <div class="subtitle" id="date-line">Connecting to server...</div>
+    </div>
+    <div class="endpoint-tag" id="endpoint-tag">GET /forecast</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Products</div><div class="stat-val" id="s-total">—</div></div>
+    <div class="stat"><div class="stat-label">At Risk</div><div class="stat-val danger" id="s-risk">—</div></div>
+    <div class="stat"><div class="stat-label">Perishable</div><div class="stat-val" id="s-perish">—</div></div>
+    <div class="stat"><div class="stat-label">Avg Horizon</div><div class="stat-val" id="s-horizon">—</div></div>
+  </div>
+
+  <div class="error-bar" id="error-bar">Could not reach server at localhost:8000. Is uvicorn running?</div>
+
+  <div class="filter-bar">
+    <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+    <button class="filter-btn" onclick="setFilter('at-risk',this)">At risk</button>
+    <button class="filter-btn" onclick="setFilter('Perishable',this)">Perishable</button>
+    <button class="filter-btn" onclick="setFilter('Refrigerated',this)">Refrigerated</button>
+    <button class="filter-btn" onclick="setFilter('Household',this)">Household</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:16%">Product</th>
+          <th style="width:13%">Category</th>
+          <th style="width:10%">Stock</th>
+          <th style="width:11%">Avg/day</th>
+          <th style="width:9%">Horizon</th>
+          <th style="width:13%">Predicted</th>
+          <th style="width:13%">Projected</th>
+          <th style="width:15%">Status</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr><td colspan="8" class="empty">Loading forecast data...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    let currentFilter = 'all';
+    let data = null;
+
+    function catBadge(cat) {
+      const cls = cat === 'Perishable' ? 'badge-p' : cat === 'Refrigerated' ? 'badge-r' : 'badge-h';
+      const lbl = cat === 'Perishable' ? 'PERISH' : cat === 'Refrigerated' ? 'REFRIG' : 'HOUSE';
+      return `<span class="badge ${cls}">${lbl}</span>`;
+    }
+
+    function render() {
+      if (!data) return;
+      const products = data.products.filter(p => {
+        if (currentFilter === 'at-risk') return p.at_risk;
+        if (currentFilter === 'all') return true;
+        return p.category === currentFilter;
+      });
+
+      const sorted = [...products].sort((a, b) => a.projected_stock - b.projected_stock);
+      const tbody = document.getElementById('tbody');
+
+      if (sorted.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="empty">No products match this filter.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = sorted.map(p => {
+        const projFmt = p.projected_stock < 0
+          ? `<span class="neg">${p.projected_stock.toFixed(1)}</span>`
+          : p.projected_stock.toFixed(1);
+        const statusBadge = p.at_risk
+          ? `<span class="badge badge-risk">AT RISK</span>`
+          : `<span class="badge badge-safe">OK</span>`;
+        return `<tr class="${p.at_risk ? 'risk-row' : ''}">
+          <td>${p.name}</td>
+          <td>${catBadge(p.category)}</td>
+          <td>${p.current_stock}</td>
+          <td>${p.rolling_avg_7d.toFixed(1)}</td>
+          <td>${p.reorder_horizon}d</td>
+          <td>${p.predicted_weekly_demand.toFixed(1)}</td>
+          <td>${projFmt}</td>
+          <td>${statusBadge}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function populateStats() {
+      if (!data) return;
+      const atRisk = data.products.filter(p => p.at_risk).length;
+      const perish = data.products.filter(p => p.category === 'Perishable').length;
+      const avgHorizon = (data.products.reduce((s, p) => s + p.reorder_horizon, 0) / data.products.length).toFixed(1);
+      document.getElementById('s-total').textContent = data.total_products;
+      document.getElementById('s-risk').textContent = atRisk;
+      document.getElementById('s-perish').textContent = perish;
+      document.getElementById('s-horizon').textContent = avgHorizon + 'd';
+      document.getElementById('date-line').textContent = 'forecast date: ' + data.forecast_date;
+    }
+
+    function setFilter(f, btn) {
+      currentFilter = f;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      render();
+    }
+
+    async function loadData() {
+      try {
+        const res = await fetch('/forecast');
+        if (!res.ok) throw new Error('Bad response');
+        data = await res.json();
+        document.getElementById('endpoint-tag').innerHTML = '<span class="live-dot"></span>live · GET /forecast';
+        document.getElementById('error-bar').style.display = 'none';
+        populateStats();
+        render();
+      } catch (e) {
+        document.getElementById('error-bar').style.display = 'block';
+        document.getElementById('date-line').textContent = 'server unavailable';
+        document.getElementById('tbody').innerHTML = `<tr><td colspan="8" class="empty">Could not load forecast data.</td></tr>`;
+      }
+    }
+
+    loadData();
+  </script>
+</body>
+</html>

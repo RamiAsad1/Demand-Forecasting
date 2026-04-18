@@ -19,8 +19,15 @@ def generate_forecast(df: pd.DataFrame) -> ForecastReport:
         .reset_index()
     )
 
-    # Baseline forecast: rolling avg × 7
-    latest["predicted_weekly_demand"] = (latest["rolling_avg_7d"] * 7).round(1)
+    # Edge case handling - Filtering to remove any noisy entries (Zero recent sales or Less than 7 days of history)
+    history_days = df.groupby("product_id")["sale_date"].count().rename("history_days")
+    latest = latest.merge(history_days, on="product_id")
+    latest = latest[latest["history_days"] >= 7]
+    latest = latest[latest["rolling_avg_7d"] > 0]
+
+    # Shelf-life-aware forecast horizon: never forecast beyond shelf life
+    latest["reorder_horizon"] = latest["shelf_life_days"].clip(upper=7)
+    latest["predicted_weekly_demand"] = (latest["rolling_avg_7d"] * latest["reorder_horizon"]).round(1)
     latest["projected_stock"] = (
             latest["current_stock"] - latest["predicted_weekly_demand"]
     ).round(1)
@@ -34,6 +41,7 @@ def generate_forecast(df: pd.DataFrame) -> ForecastReport:
             category=row["category"],
             current_stock=int(row["current_stock"]),
             rolling_avg_7d=float(row["rolling_avg_7d"]),
+            reorder_horizon=int(row["reorder_horizon"]),
             predicted_weekly_demand=float(row["predicted_weekly_demand"]),
             projected_stock=float(row["projected_stock"]),
             at_risk=bool(row["at_risk"]),
